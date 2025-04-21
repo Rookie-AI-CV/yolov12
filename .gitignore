@@ -40,11 +40,26 @@ runs/
 assets/*.jpg
 assets/*.png
 assets/*.mp4
+*.yaml
+*.json
+*.txt
+*.jpg
+*.png
+*.mp4
+*.cache
+*.pth
+*.pkl
+*.pt
+*.onnx
+*.engine
+*.trt
+
 
 # Virtual Environment
 venv/
 env/
 ENV/
+chengdu_dataset/
 
 # Jupyter Notebook
 .ipynb_checkpoints
