@@ -11,9 +11,12 @@ export YOLO_MIXUP=0.0        # Mixup数据增强概率
 export YOLO_COPY_PASTE=0.1   # Copy-Paste数据增强概率
 export YOLO_DEVICE="0"       # 使用第一块GPU
 
+
+train_log="train_log.txt"
+
 # 使用nohup在后台运行训练,并将输出追加到train_log.txt
-nohup python train.py >> train_log.txt 2>&1 &
+nohup python train.py >> $train_log 2>&1 &
 
 # 打印进程ID
 echo "训练已启动,进程ID: $!"
-echo "日志正在写入train_log.txt"
+echo "日志正在写入$train_log"
