@@ -1,39 +1,82 @@
+# 导入必要的库
 import os
 import torch
 from ultralytics import YOLO
 
+# 打印CUDA设备信息
+print(f"torch.cuda.is_available(): {torch.cuda.is_available()}")  # 检查是否可用CUDA
+print(f"torch.cuda.get_device_name(0): {torch.cuda.get_device_name(0)}")  # 获取GPU设备名称
 
-print(f"torch.cuda.is_available(): {torch.cuda.is_available()}")
-print(f"torch.cuda.get_device_name(0): {torch.cuda.get_device_name(0)}")
+# 初始化YOLO模型
+model = YOLO(os.getenv("YOLO_MODEL_YAML", "yolov12n.yaml"))  # 从环境变量获取模型配置文件,默认使用yolov12n.yaml
 
-model = YOLO("yolov12n.yaml")
-
+# 开始训练模型
 results = model.train(
-  # 训练数据集的配置文件路径，从环境变量YOLO_DATA中获取
-  data=os.getenv("YOLO_DATA"),
-  # 训练轮数，默认600轮，从环境变量YOLO_EPOCHS中获取
-  epochs=int(os.getenv("YOLO_EPOCHS", 600)),
-  # 批次大小，默认2，从环境变量YOLO_BATCH中获取
-  batch=int(os.getenv("YOLO_BATCH", 2)), 
-  # 输入图像尺寸，默认640x640，从环境变量YOLO_IMGSZ中获取
-  imgsz=int(os.getenv("YOLO_IMGSZ", 640)),
-  # 图像缩放比例，默认0.5，不同模型推荐值：S/M/L/X均为0.9
-  scale=float(os.getenv("YOLO_SCALE", 0.5)),  # S:0.9; M:0.9; L:0.9; X:0.9
-  # Mosaic数据增强的概率，默认1.0，从环境变量YOLO_MOSAIC中获取
-  mosaic=float(os.getenv("YOLO_MOSAIC", 1.0)),
-  # Mixup数据增强的概率，默认0.0，不同模型推荐值：S:0.05; M/L:0.15; X:0.2
-  mixup=float(os.getenv("YOLO_MIXUP", 0.0)),  # S:0.05; M:0.15; L:0.15; X:0.2
-  # Copy-Paste数据增强的概率，默认0.1，不同模型推荐值：S:0.15; M:0.4; L:0.5; X:0.6
-  copy_paste=float(os.getenv("YOLO_COPY_PASTE", 0.1)),  # S:0.15; M:0.4; L:0.5; X:0.6
-  # 训练设备，默认使用第一块GPU(0)，从环境变量YOLO_DEVICE中获取
-  device=os.getenv("YOLO_DEVICE", "0"),
+    # 数据加载相关参数
+    workers=int(os.getenv("YOLO_WORKERS", 8)),  # 数据加载的工作进程数
+    batch=int(os.getenv("YOLO_BATCH", 16)),  # 训练的批次大小
+    imgsz=int(os.getenv("YOLO_IMGSZ", 640)),  # 输入图像尺寸
+    cache=os.getenv("YOLO_CACHE", "False").lower() == "true",  # 是否缓存图像到RAM
+    rect=os.getenv("YOLO_RECT", "False").lower() == "true",  # 是否使用矩形训练
+    
+    # 优化器相关参数
+    optimizer=os.getenv("YOLO_OPTIMIZER", "auto"),  # 优化器类型
+    weight_decay=float(os.getenv("YOLO_WEIGHT_DECAY", 0.0005)),  # 权重衰减
+    momentum=float(os.getenv("YOLO_MOMENTUM", 0.937)),  # 动量
+    lr0=float(os.getenv("YOLO_LR0", 0.01)),  # 初始学习率
+    lrf=float(os.getenv("YOLO_LRF", 0.01)),  # 最终学习率
+    
+    # 训练策略参数
+    epochs=int(os.getenv("YOLO_EPOCHS", 100)),  # 训练轮数
+    cos_lr=os.getenv("YOLO_COS_LR", "False").lower() == "true",  # 是否使用余弦学习率
+    warmup_epochs=float(os.getenv("YOLO_WARMUP_EPOCHS", 3.0)),  # 预热轮数
+    warmup_momentum=float(os.getenv("YOLO_WARMUP_MOMENTUM", 0.8)),  # 预热动量
+    warmup_bias_lr=float(os.getenv("YOLO_WARMUP_BIAS_LR", 0.1)),  # 预热偏置学习率
+    close_mosaic=int(os.getenv("YOLO_CLOSE_MOSAIC", 10)),  # 关闭马赛克增强的轮数
+    
+    # 损失函数权重
+    box=float(os.getenv("YOLO_BOX", 7.5)),  # 边界框损失权重
+    cls=float(os.getenv("YOLO_CLS", 0.5)),  # 分类损失权重
+    dfl=float(os.getenv("YOLO_DFL", 1.5)),  # DFL损失权重
+    kobj=float(os.getenv("YOLO_KOBJ", 2.0)),  # 关键点目标损失权重
+    pose=float(os.getenv("YOLO_POSE", 12.0)),  # 姿态损失权重
+    
+    # 数据集相关参数
+    data=os.getenv("YOLO_DATA"),  # 数据集配置文件路径
+    single_cls=os.getenv("YOLO_SINGLE_CLS", "False").lower() == "true",  # 是否为单类别检测
+    classes=[int(x) for x in os.getenv("YOLO_CLASSES").split(",")] if os.getenv("YOLO_CLASSES") else None,  # 指定训练类别
+    fraction=float(os.getenv("YOLO_FRACTION", 1.0)),  # 训练数据集比例
+    
+    # 模型相关参数
+    model=os.getenv("YOLO_MODEL"),  # 预训练模型路径
+    pretrained=os.getenv("YOLO_PRETRAINED", "True"),  # 是否使用预训练权重
+    freeze=int(os.getenv("YOLO_FREEZE")) if os.getenv("YOLO_FREEZE") else None,  # 冻结层数
+    dropout=float(os.getenv("YOLO_DROPOUT", 0.0)),  # dropout比例
+    
+    # 训练过程参数
+    device=os.getenv("YOLO_DEVICE", None),  # 训练设备
+    amp=os.getenv("YOLO_AMP", "True").lower() == "true",  # 是否使用混合精度训练
+    deterministic=os.getenv("YOLO_DETERMINISTIC", "True").lower() == "true",  # 是否使用确定性训练
+    seed=int(os.getenv("YOLO_SEED", 0)),  # 随机种子
+    val=os.getenv("YOLO_VAL", "True").lower() == "true",  # 是否进行验证
+    
+    # 保存相关参数
+    project=os.getenv("YOLO_PROJECT"),  # 项目名称
+    name=os.getenv("YOLO_NAME"),  # 实验名称
+    exist_ok=os.getenv("YOLO_EXIST_OK", "False").lower() == "true",  # 是否允许覆盖已存在的实验目录
+    save=os.getenv("YOLO_SAVE", "True").lower() == "true",  # 是否保存模型
+    save_period=int(os.getenv("YOLO_SAVE_PERIOD", -1)),  # 保存周期
+    
+    # 其他参数
+    patience=int(os.getenv("YOLO_PATIENCE", 100)),  # 早停耐心值
+    plots=os.getenv("YOLO_PLOTS", "False").lower() == "true",  # 是否绘制训练图表
+    profile=os.getenv("YOLO_PROFILE", "False").lower() == "true",  # 是否进行性能分析
+    resume=os.getenv("YOLO_RESUME", "False").lower() == "true",  # 是否恢复中断的训练
+    time=float(os.getenv("YOLO_TIME")) if os.getenv("YOLO_TIME") else None,  # 训练时间限制
 )
 
-
-# Evaluate model performance on the validation set
+# 在验证集上评估模型性能
 metrics = model.val()
 
-
-# Save the model
-model.save("yolov12n.pt")
-
+# 保存训练好的模型
+model.save(os.getenv("YOLO_SAVE_PATH", "yolov12n.pt"))  # 保存路径默认为yolov12n.pt
