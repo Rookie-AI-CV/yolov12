@@ -47,6 +47,25 @@ results = model.train(
     classes=[int(x) for x in os.getenv("YOLO_CLASSES").split(",")] if os.getenv("YOLO_CLASSES") else None,  # 指定训练类别
     fraction=float(os.getenv("YOLO_FRACTION", 1.0)),  # 训练数据集比例
     
+    # 数据增强参数
+    hsv_h=float(os.getenv("YOLO_HSV_H", 0.015)),  # HSV色调增强
+    hsv_s=float(os.getenv("YOLO_HSV_S", 0.7)),  # HSV饱和度增强
+    hsv_v=float(os.getenv("YOLO_HSV_V", 0.4)),  # HSV亮度增强
+    degrees=float(os.getenv("YOLO_DEGREES", 0.0)),  # 旋转角度范围
+    translate=float(os.getenv("YOLO_TRANSLATE", 0.1)),  # 平移范围
+    scale=float(os.getenv("YOLO_SCALE", 0.5)),  # 缩放范围
+    shear=float(os.getenv("YOLO_SHEAR", 0.0)),  # 剪切角度
+    perspective=float(os.getenv("YOLO_PERSPECTIVE", 0.0)),  # 透视变换
+    flipud=float(os.getenv("YOLO_FLIPUD", 0.0)),  # 上下翻转概率
+    fliplr=float(os.getenv("YOLO_FLIPLR", 0.5)),  # 左右翻转概率
+    bgr=float(os.getenv("YOLO_BGR", 0.0)),  # BGR通道翻转概率
+    mosaic=float(os.getenv("YOLO_MOSAIC", 1.0)),  # 马赛克增强概率
+    mixup=float(os.getenv("YOLO_MIXUP", 0.0)),  # mixup增强概率
+    copy_paste=float(os.getenv("YOLO_COPY_PASTE", 0.0)),  # 复制粘贴概率
+    copy_paste_mode=os.getenv("YOLO_COPY_PASTE_MODE", "flip"),  # 复制粘贴模式
+    auto_augment=os.getenv("YOLO_AUTO_AUGMENT", "randaugment"),  # 自动增强策略
+    erasing=float(os.getenv("YOLO_ERASING", 0.4)),  # 随机擦除概率
+    
     # 模型相关参数
     model=os.getenv("YOLO_MODEL"),  # 预训练模型路径
     pretrained=os.getenv("YOLO_PRETRAINED", "True"),  # 是否使用预训练权重

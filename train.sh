@@ -4,7 +4,7 @@
 export YOLO_DATA="data.yaml"                  # * 数据集配置文件路径,包含训练和验证数据、类名和类数
 export YOLO_WORKERS=8                         # 数据加载工作线程数,影响数据预处理和输入模型的速度
 export YOLO_BATCH=2                           # * 批量大小,可设为整数、自动模式(-1)或指定GPU利用率(0-1)
-export YOLO_IMGSZ=640                         # * 训练的目标图像尺寸,影响模型精度和计算复杂度
+export YOLO_IMGSZ=1024                        # * 训练的目标图像尺寸,影响模型精度和计算复杂度
 export YOLO_CACHE="false"                     # 是否缓存数据集图像(RAM/disk/false),可提高训练速度但增加内存使用
 export YOLO_RECT="false"                      # 是否使用矩形训练,可优化批次减少填充,提高效率但可能影响精度
 
@@ -34,6 +34,25 @@ export YOLO_POSE=12.0                        # 姿态损失权重,影响姿态�
 export YOLO_SINGLE_CLS="false"               # 是否将所有类别视为单一类别,适用于二元分类
 export YOLO_FRACTION=1.0                     # 使用的数据集比例,允许在数据子集上训练
 
+# 新增数据增强参数
+export YOLO_HSV_H=0.015                      # HSV色调增强
+export YOLO_HSV_S=0.7                        # HSV饱和度增强
+export YOLO_HSV_V=0.4                        # HSV亮度增强
+export YOLO_DEGREES=0.0                      # 旋转角度范围
+export YOLO_TRANSLATE=0.1                    # 平移范围
+export YOLO_SCALE=0.9                        # * 缩放范围
+export YOLO_SHEAR=0.0                        # 剪切角度
+export YOLO_PERSPECTIVE=0.0                  # 透视变换
+export YOLO_FLIPUD=0.0                       # 上下翻转概率
+export YOLO_FLIPLR=0.5                       # 左右翻转概率
+export YOLO_BGR=0.0                          # BGR通道翻转概率
+export YOLO_MOSAIC=1.0                       # * 马赛克增强概率
+export YOLO_MIXUP=0.15                       # * mixup增强概率
+export YOLO_COPY_PASTE=0.5                   # * 复制粘贴概率
+export YOLO_COPY_PASTE_MODE="flip"           # 复制粘贴模式
+export YOLO_AUTO_AUGMENT="randaugment"       # 自动增强策略
+export YOLO_ERASING=0.4                      # 随机擦除概率
+
 # 模型相关参数
 export YOLO_MODEL_YAML="yolov12n.yaml"       # * 模型配置文件,定义模型结构
 export YOLO_MODEL=""                         # * 预训练模型路径(.pt文件)
@@ -60,6 +79,7 @@ export YOLO_PATIENCE=100                     # 早停耐心值,验证指标未�
 export YOLO_PLOTS="false"                    # 是否生成训练验证指标图和预测示例图
 export YOLO_PROFILE="false"                  # 是否对ONNX和TensorRT速度进行分析
 export YOLO_RESUME="false"                   # * 是否从上次检查点恢复训练
+export YOLO_TIME=""                          # 新增: 训练时间限制
 
 train_log="train_log.txt"
 
