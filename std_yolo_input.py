@@ -2,6 +2,8 @@ import json
 import os
 import logging
 from tqdm import tqdm
+import cv2
+import numpy as np
 # 配置日志
 logging.basicConfig(
     level=logging.INFO,
@@ -55,9 +57,8 @@ def process_annotations(annotation_file):
         images_info: 包含处理后图像信息的字典,带有归一化边界框
     """
     # 加载标注文件
-    with open(annotation_file, 'r') as f:
+    with open(annotation_file, 'r', encoding='utf-8') as f:
         annotations = json.load(f)
-    
     logger.info("Processing annotation file...")
     
     # 创建图像信息字典
@@ -123,7 +124,7 @@ names:
     logger.info(f"YAML configuration saved to: {save_path}")
 
 
-def cocodateset_to_yolostddataset(coco_images_dir, annotation_file, save_dir, dataset_type='train'):
+def cocodateset_to_yolostddataset(coco_images_dir, annotation_file, save_dir, dataset_type='train', convert_gray=False):
     """
     将COCO格式数据集转换为YOLO标准数据集格式
     
@@ -132,6 +133,7 @@ def cocodateset_to_yolostddataset(coco_images_dir, annotation_file, save_dir, da
         annotation_file: COCO格式标注文件路径 
         save_dir: 保存YOLO格式数据集的根目录
         dataset_type: 数据集类型，默认为'train', 可选值为'train'、'valid'、'test'
+        convert_gray: 是否转换为灰度图，默认为False
         
     数据集转换过程:
     1. 创建YOLO格式目录结构: 
@@ -161,12 +163,23 @@ def cocodateset_to_yolostddataset(coco_images_dir, annotation_file, save_dir, da
     for k, image in tqdm(images_info.items(), desc="Converting images", unit="img"):
         logger.debug(f"Processing image {k+1}/{len(images_info)}: {image['file_name']}")
         
-        # 复制并重命名图片
         file_name = image['file_name']
-        new_name = f"{k:06d}.jpg"
         old_path = os.path.join(coco_images_dir, file_name)
+        new_name = f"{k:06d}.jpg"
         new_path = os.path.join(save_images_dir, new_name)
-        shutil.copy(old_path, new_path)
+        
+        if convert_gray:
+            # 先复制原图
+            shutil.copy(old_path, new_path)
+            # 再转换为灰度图
+            img = cv2.imread(new_path)
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            # 将单通道灰度图复制为3通道
+            gray_3channel = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
+            cv2.imwrite(new_path, gray_3channel)
+        else:
+            # 直接复制原图
+            shutil.copy(old_path, new_path)
         
         # 更新文件名
         images_info[k]['file_name'] = new_name
@@ -182,7 +195,7 @@ def cocodateset_to_yolostddataset(coco_images_dir, annotation_file, save_dir, da
     logger.info(f"Dataset conversion completed. Processed {len(images_info)} images")
 
 
-def main(input_dir, output_dir, yaml_path):
+def main(input_dir, output_dir, yaml_path, convert_gray=False):
     """
     主函数
     
@@ -190,14 +203,15 @@ def main(input_dir, output_dir, yaml_path):
         input_dir: 输入数据集目录
         output_dir: 输出数据集目录
         yaml_path: YAML配置文件保存路径
+        convert_gray: 是否转换为灰度图
     """
     logger.info("Starting dataset conversion process...")
     train_dir, train_anno, valid_dir, valid_anno = get_dataset_paths(input_dir)
     
     # 训练集转换
-    cocodateset_to_yolostddataset(train_dir, train_anno, output_dir, "train")
+    cocodateset_to_yolostddataset(train_dir, train_anno, output_dir, "train", convert_gray)
     # 验证集转换
-    cocodateset_to_yolostddataset(valid_dir, valid_anno, output_dir, "valid")
+    cocodateset_to_yolostddataset(valid_dir, valid_anno, output_dir, "valid", convert_gray)
     # 生成yaml配置文件
     generate_yaml_config(train_anno, output_dir, yaml_path)
     logger.info("Dataset conversion completed successfully")
@@ -210,10 +224,11 @@ if __name__ == "__main__":
     parser.add_argument('-i', '--input_dir', type=str, required=True, help='包含COCO数据集的输入目录')
     parser.add_argument('-o', '--output_dir', type=str, required=True, help='YOLO格式数据集的输出目录')
     parser.add_argument('-y', '--yaml_path', type=str, help='YAML配置文件保存路径')
+    parser.add_argument('--gray', action='store_true', help='是否转换为灰度图')
     
     args = parser.parse_args()
     
     if args.yaml_path is None:
         args.yaml_path = args.output_dir + "/chengdu.yaml"
         
-    main(args.input_dir, args.output_dir, args.yaml_path)
+    main(args.input_dir, args.output_dir, args.yaml_path, args.gray)
